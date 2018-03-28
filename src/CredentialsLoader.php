@@ -73,7 +73,7 @@ abstract class CredentialsLoader implements FetchAuthTokenInterface
     private static function makeJsonFromP12($path)
     {
         if (false === $password = getenv('P12_PASSWORD')) {
-            $cause = 'No Password provided for key. Set P!"_PASSWORD';
+            $cause = 'No Password provided for key. Set P12"_PASSWORD';
             throw new \DomainException(self::unableToReadEnv($cause));
         }
         if (false === $clientEmail = getenv('P12_CLIENT_EMAIL')) {
@@ -114,7 +114,7 @@ abstract class CredentialsLoader implements FetchAuthTokenInterface
         }
         switch (substr($path, strrpos($path, '.'))) {
             case '.p12':
-                $jsonkey = self::makeJsonFromP12($path);
+                $jsonKey = self::makeJsonFromP12($path);
                 break;
 
             case '.json':
