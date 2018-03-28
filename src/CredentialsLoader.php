@@ -54,6 +54,46 @@ abstract class CredentialsLoader implements FetchAuthTokenInterface
     }
 
     /**
+     * @param string $path path to key file
+     * @return array
+     */
+    private static function readJsonFile($path)
+    {
+        return json_decode(file_get_contents($path), true);
+    }
+
+    /**
+     * Read P12_PASSWORD, P12_CLIENT_ID, P12_CLIENT_EMAIL
+     * and return jsonkey with private key from .p12 file
+     *
+     * @param string $path path to key file
+     * @return array
+     * @throws \DomainException if env parameter is missing
+     */
+    private static function makeJsonFromP12($path)
+    {
+        if (false === $password = getenv('P12_PASSWORD')) {
+            $cause = 'No Password provided for key. Set P!"_PASSWORD';
+            throw new \DomainException(self::unableToReadEnv($cause));
+        }
+        if (false === $clientEmail = getenv('P12_CLIENT_EMAIL')) {
+            $cause = 'No client email provided. Set P12_CLIENT_EMAIL';
+            throw new \DomainException((self::unableToReadEnv($cause)));
+        }
+        if (false === $clientId = getenv('P12_CLIENT_ID')) {
+            $cause = 'No client email provided. Set P12_CLIENT_ID';
+            throw new \DomainException((self::unableToReadEnv($cause)));
+        }
+        openssl_pkcs12_read(file_get_contents($path), $certs, $password);
+        return [
+            'type'          => 'service_account',
+            'client_email'  => $clientEmail,
+            'client_id'     => $clientId,
+            'private_key'   => $certs['pkey']
+        ];
+    }
+
+    /**
      * Load a JSON key from the path specified in the environment.
      *
      * Load a JSON key from the path specified in the environment
@@ -72,8 +112,17 @@ abstract class CredentialsLoader implements FetchAuthTokenInterface
             $cause = 'file ' . $path . ' does not exist';
             throw new \DomainException(self::unableToReadEnv($cause));
         }
-        $jsonKey = file_get_contents($path);
-        return json_decode($jsonKey, true);
+        switch (substr($path, strrpos($path, '.'))) {
+            case '.p12':
+                $jsonkey = self::makeJsonFromP12($path);
+                break;
+
+            case '.json':
+            default:
+                $jsonKey = self::readJsonFile($path);
+                break;
+        }
+        return $jsonKey;
     }
 
     /**
@@ -166,9 +215,9 @@ abstract class CredentialsLoader implements FetchAuthTokenInterface
                 $stack->push($middleware);
 
                 return new \GuzzleHttp\Client([
-                   'handler' => $stack,
-                   'auth' => 'google_auth',
-                ] + $httpClientOptions);
+                        'handler' => $stack,
+                        'auth' => 'google_auth',
+                    ] + $httpClientOptions);
             default:
                 throw new \Exception('Version not supported');
         }
