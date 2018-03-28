@@ -167,7 +167,7 @@ class ADCGetMiddlewareTest extends TestCase
         ]);
 
         $cacheOptions = [];
-        $cachePool = $this->getMock('Psr\Cache\CacheItemPoolInterface');
+        $cachePool = $this->createMock('Psr\Cache\CacheItemPoolInterface');
 
         $middleware = ApplicationDefaultCredentials::getMiddleware(
             'a scope',
